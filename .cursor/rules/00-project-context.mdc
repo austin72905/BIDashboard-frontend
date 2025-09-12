@@ -1,0 +1,57 @@
+---
+description: "【專案背景】BI Dashboard – React + TS + MUI + Axios"
+globs:
+alwaysApply: true
+---
+
+# 專案類型與目標
+- 這是一個 **自助式 BI 報表平台** 前端專案。
+- 主要功能：上傳/匯入訂單與顧客資料 → 清洗/對映 → 視覺化圖表與表格 → 篩選/分群/導出。
+- 介面風格：一致與專業，**優先使用 MUI** 元件與 MUI Theme 自訂外觀。
+- 效能重點：列表/圖表的虛擬化、延遲載入、避免不必要的 re-render。
+- 可用性：清楚的 loading/empty/error 狀態；可復用的 `Table`、`FilterBar`、`UploadDialog` 等元件。
+
+# 技術選型
+- **React 18 + TypeScript**（嚴格型別、函式式元件 + Hooks）
+- **MUI v5**（自定 Theme / Palette / Typography）
+- **Axios**（集中封裝 API base、攔截器、錯誤格式化）
+- **Routing**：React Router (如需)
+- **圖表**：先以 MUI + DataGrid / 自行封裝介面，之後再選圖表套件統一（例如 Recharts）。
+
+# 檔案結構（建議）
+- `src/components/`：可復用 UI（MUI 為主）
+- `src/features/`：以功能域分模組（e.g. `orders/`, `customers/`, `reports/`）
+- `src/pages/`：頁面級組件
+- `src/services/`：`api.ts`（axios instance）、各資源 `*.service.ts`
+- `src/types/`：共用 TypeScript 型別
+- `src/theme/`：MUI 主題設定
+
+# 檔案結構
+src/
+├── assets/                   # 靜態資源 (logo, icon)
+├── charts/                   # 各種圖表元件
+│   ├── AgeDistributionChart.tsx
+│   └── GenderPieChart.tsx
+├── components/               # 共用元件
+│   ├── CsvUploader.tsx       # 上傳 CSV
+│   ├── MappingDialog.tsx     # 欄位對應 UI
+│   └── Layout.tsx            # 基礎版面 (header/sidebar)
+├── features/
+│   └── dashboard/            # 儀表板功能
+│       ├── DashboardPage.tsx
+│       └── hooks/
+│           └── useDashboardData.ts
+├── services/                 # API 請求
+│   ├── axios.ts              # axios instance (baseURL, 攔截器)
+│   └── dashboardApi.ts       # Dashboard API (get stats, upload csv)
+├── stores/                   # Zustand 全域狀態
+│   ├── useUserStore.ts       # 使用者登入狀態
+│   └── useDashboardStore.ts  # 儀表板資料狀態
+├── types/                    # 型別定義
+│   ├── Dashboard.ts          # 統計資料 DTO
+│   └── User.ts               # 使用者 DTO
+├── utils/
+│   └── csvParser.ts          # CSV 解析工具 (Papaparse)
+├── App.tsx
+├── main.tsx
+└── vite-env.d.ts

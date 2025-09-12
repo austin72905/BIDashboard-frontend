@@ -1,0 +1,19 @@
+---
+description: "【MUI 使用規範】Theme 優先、元件可復用、樣式一致"
+globs:
+alwaysApply: true
+---
+# Theme 與設計
+- 所有顏色、字體、間距盡量透過 **MUI Theme** 管理；不要硬寫常數在元件內。
+- 以 `src/theme/index.ts` 匯出 `createTheme(...)`；透過 `ThemeProvider` 注入整站。
+- 優先使用 MUI 的 **系統樣式（sx）** 與 `styled`；避免內聯 style 物件硬寫魔術數字。
+
+# 元件與組合
+- 優先用 MUI 官方元件組合（如 `Box`, `Stack`, `Grid`, `Card`, `Tabs`, `Dialog`）。
+- 建立通用表格 `DataTable`, 篩選列 `FilterBar`, 上傳對話框 `UploadDialog` 等**可復用**組件。
+- 表單使用 `TextField / Select / Autocomplete / DatePicker` 等，並維持一致的驗證與錯誤顯示。
+
+# 可用性與無障礙
+- 為交互元件加上 `aria-*` 屬性與可讀 label。
+- Loading 狀態顯示 `Skeleton` 或 `CircularProgress`；Empty 狀態顯示明確文案與指引。
+- 表格/卡片密度與間距統一；手機/平板/桌機斷點行為一致可預期。

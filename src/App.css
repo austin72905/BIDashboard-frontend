@@ -1,0 +1,145 @@
+/* BI Dashboard 專用樣式 */
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f5f5f5;
+}
+
+/* 容器樣式 - 居中且限制最大寬度 */
+.MuiContainer-root {
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+}
+
+/* 漸層背景動畫 */
+.dashboard-background {
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 自定義滾動條 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 統計卡片動畫 - 已移至下方統一定義 */
+
+.stats-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Grid 容器樣式 - 讓元件自動填滿空間 */
+.MuiGrid-container {
+  width: 100%;
+}
+
+/* Grid 項目樣式 - 確保卡片填滿可用空間 */
+.MuiGrid-item {
+  display: flex;
+}
+
+/* 統計卡片填滿容器 */
+.stats-card {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Paper 組件也要填滿容器 */
+.MuiPaper-root {
+  width: 100%;
+  height: 100%;
+}
+
+/* 確保 CardContent 也能適應容器 */
+.MuiCardContent-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 圖表容器樣式 */
+.chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-container:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 載入動畫 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 響應式調整 */
+@media (max-width: 600px) {
+  .dashboard-title {
+    font-size: 1.5rem !important;
+  }
+  
+  .stats-card {
+    margin-bottom: 16px;
+  }
+}
+
+/* 文字選擇樣式 */
+::selection {
+  background-color: rgba(25, 118, 210, 0.2);
+}
+
+/* 無數據提示樣式 */
+.no-data-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  margin: 20px 0;
+}

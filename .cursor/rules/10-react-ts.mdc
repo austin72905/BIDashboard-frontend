@@ -1,0 +1,20 @@
+---
+description: "【React + TypeScript 規範】函式元件、嚴格型別、可復用"
+globs:
+alwaysApply: true
+---
+# 元件開發規範
+- 僅使用 **函式式元件** 與 **Hooks**；避免 class components。
+- 元件以 **UI（presentational）** 與 **Container（邏輯）** 分層；能抽離的邏輯改用自訂 hooks。
+- `props` 與回傳值都要有明確型別；**禁止使用 any**（除非無可避免且需註解說明）。
+- 布林變數以 `is`/`has` 前綴；事件處理用 `handleXxx` 命名。
+- 盡量使用 **早期 return** 處理 loading/error，讓主體邏輯乾淨。
+
+# 狀態/副作用
+- 避免在多個元件重複寫相同副作用；抽為 `useXxx` 自訂 hook。
+- 列表頁：分離「查詢條件」與「資料集」，避免耦合；用 `useEffect` 監聽條件變化觸發 API。
+- 所有非同步函式以 `try/catch` 包裝，錯誤交由 `services/api` 統一定義的格式處理。
+
+# 型別與 Utility
+- 常用 DTO/Enum 放 `src/types/`；API 回應型別與前端 ViewModel 清楚分離。
+- 新增工具函式（如日期格式、數字格式）置於 `src/utils/`，並寫最小單元測試。

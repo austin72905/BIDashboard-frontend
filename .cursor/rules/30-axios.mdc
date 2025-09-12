@@ -1,0 +1,20 @@
+---
+description:  "【Axios/HTTP 規範】集中封裝、攔截器、錯誤處理一致化"
+globs:
+alwaysApply: true
+---
+
+# 統一 API 呼叫層
+- 在 `src/services/api.ts` 建立 **單一 axios instance**，設定 `baseURL`、`timeout`、`headers`。
+- **禁止在元件中直接 new Axios** 或硬寫 baseURL；一律用 `api.ts` 匯出的 instance。
+- Token/Session 從安全來源取得（如 HttpOnly cookie；若用 Bearer Token，統一在攔截器注入）。
+
+# 攔截器與錯誤格式
+- Request Interceptor：注入 auth、trace-id、locale 等 header；可在 dev 加上調試資訊。
+- Response Interceptor：將錯誤統一轉成 `{ code, message, detail }` 格式回傳，避免各處重複解析。
+- 對於 401/403：統一在攔截器導向登入或彈出提示（避免在各頁重寫）。
+
+# 呼叫慣例
+- 每個資源建立對應 `*.service.ts`（如 `orders.service.ts`、`customers.service.ts`），包含 CRUD 與查詢條件型別。
+- `try/catch` + `await`；錯誤一律交給前述的統一格式顯示；UI 僅依賴 `isLoading`/`errorMessage` 渲染狀態。
+- 所有 API URL **不可硬編**；集中管理於常數或服務層。

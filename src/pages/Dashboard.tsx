@@ -41,7 +41,8 @@ import {
   Storage,
   Add,
   Dataset,
-  Delete
+  Delete,
+  Info
 } from '@mui/icons-material';
 import { useDashboardStore } from '../stores/useDashboardStore';
 import { getAllMetrics, uploadCsv, convertAllMetricsToDashboardStats, getUserDatasets } from '../services/dashboardApi';
@@ -113,6 +114,7 @@ export default function Dashboard() {
     }
   };
 
+
   // 載入儀表板數據
   const loadDashboardData = async () => {
     if (!currentDatasetId) {
@@ -152,6 +154,8 @@ export default function Dashboard() {
       setError('請先選擇要上傳的資料集');
       return;
     }
+
+    // 注意：批次數量限制將由後端 API 處理
 
     try {
       setUploading(true);
@@ -390,6 +394,19 @@ export default function Dashboard() {
           <Typography variant="h6" gutterBottom>
             數據管理
           </Typography>
+          
+          {/* 顯示批次數量限制信息 */}
+          {currentDatasetId && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Info color="info" fontSize="small" />
+                <Typography variant="body2" color="text.secondary">
+                  每個資料集最多可上傳 5 個檔案
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"

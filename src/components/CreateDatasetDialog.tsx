@@ -8,9 +8,11 @@ import {
   Button,
   Box,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Typography,
+  Chip
 } from '@mui/material';
-import { Add } from '@mui/icons-material';
+import { Add, Info } from '@mui/icons-material';
 import { useDashboardStore } from '../stores/useDashboardStore';
 
 interface CreateDatasetDialogProps {
@@ -21,13 +23,22 @@ interface CreateDatasetDialogProps {
 export default function CreateDatasetDialog({ open, onClose }: CreateDatasetDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const { createDataset, isLoading, error, setError } = useDashboardStore();
+  const { createDataset, isLoading, error, setError, userDatasets } = useDashboardStore();
+  
+  const currentDatasetCount = userDatasets.length;
+  const maxDatasets = 2;
+  const canCreateMore = currentDatasetCount < maxDatasets;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim()) {
       setError('資料集名稱不能為空');
+      return;
+    }
+
+    if (!canCreateMore) {
+      setError(`您已達到資料集數量上限（${maxDatasets} 個），無法創建更多資料集`);
       return;
     }
 
@@ -68,6 +79,26 @@ export default function CreateDatasetDialog({ open, onClose }: CreateDatasetDial
       
       <form onSubmit={handleSubmit}>
         <DialogContent>
+          {/* 顯示資料集數量限制信息 */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <Info color="info" fontSize="small" />
+              <Typography variant="body2" color="text.secondary">
+                資料集數量限制
+              </Typography>
+            </Box>
+            <Box display="flex" alignItems="center" gap={1}>
+              <Chip 
+                label={`${currentDatasetCount}/${maxDatasets}`}
+                color={canCreateMore ? "success" : "error"}
+                size="small"
+              />
+              <Typography variant="body2" color="text.secondary">
+                每個用戶最多可創建 {maxDatasets} 個資料集
+              </Typography>
+            </Box>
+          </Box>
+
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -112,7 +143,7 @@ export default function CreateDatasetDialog({ open, onClose }: CreateDatasetDial
           <Button 
             type="submit" 
             variant="contained" 
-            disabled={isLoading || !name.trim()}
+            disabled={isLoading || !name.trim() || !canCreateMore}
             startIcon={isLoading ? <CircularProgress size={20} /> : <Add />}
           >
             {isLoading ? '創建中...' : '創建資料集'}

@@ -22,7 +22,6 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Grid,
   Card,
   CardContent
 } from '@mui/material';
@@ -229,23 +228,29 @@ export default function ColumnMappingDialog({
                 <Typography variant="h6" gutterBottom>
                   系統欄位說明
                 </Typography>
-                <Grid container spacing={2}>
+                <Box sx={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: {
+                    xs: 'repeat(2, 1fr)',
+                    sm: 'repeat(3, 1fr)', 
+                    md: 'repeat(4, 1fr)'
+                  },
+                  gap: 2 
+                }}>
                   {Object.entries(mappingInfo.systemFields).slice(0, 12).map(([key, value]) => (
-                    <Grid item xs={6} sm={4} md={3} key={key}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label={key}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          {value.fieldName}
-                        </Typography>
-                      </Box>
-                    </Grid>
+                    <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip
+                        label={key}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {value.fieldName}
+                      </Typography>
+                    </Box>
                   ))}
-                </Grid>
+                </Box>
                 {Object.keys(mappingInfo.systemFields).length > 12 && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     還有 {Object.keys(mappingInfo.systemFields).length - 12} 個系統欄位...

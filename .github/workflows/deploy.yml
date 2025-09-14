@@ -1,0 +1,63 @@
+name: CI/CD for React Vite Project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: 檢出程式碼
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Step 2: 安裝 Node.js 環境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 使用較新的 Node.js 版本
+          cache: 'npm' # 快取 npm 依賴
+
+      # Step 3: 安裝依賴
+      - name: Install dependencies
+        run: npm ci # 使用 npm ci 更適合 CI 環境
+
+      # Step 4: 類型檢查
+      - name: Type check
+        run: npm run type-check || npx tsc -b
+
+      # Step 5: ESLint 檢查
+      - name: Lint check
+        run: npm run lint
+
+      # Step 6: 建立環境變數檔案
+      - name: Create production env file
+        run: |
+          echo "VITE_API_BASE_URL=/api" > .env.production
+          echo "VITE_ENVIRONMENT=production" >> .env.production
+
+      # Step 7: 構建 React Vite 應用
+      - name: Build React Vite app
+        run: npm run build
+
+      # Step 8: 登入 Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Step 9: 建立 & 推送 Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/bi-dashboard-frontend:latest

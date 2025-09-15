@@ -2,7 +2,7 @@ import axios from "axios";
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL, // 你的後端 API
-  timeout: 10000,
+  timeout: 30000,
 });
 
 // 請求攔截器 - 自動添加 token

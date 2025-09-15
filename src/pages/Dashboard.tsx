@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Container, 
   Typography, 
@@ -58,6 +58,7 @@ import AuthDebugPanel from '../components/AuthDebugPanel';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { 
     stats, 
     allMetrics, 
@@ -255,6 +256,17 @@ export default function Dashboard() {
     setAnchorEl(null);
   };
 
+  // 處理 URL 參數中的資料集 ID
+  useEffect(() => {
+    const datasetIdFromUrl = searchParams.get('datasetId');
+    if (datasetIdFromUrl) {
+      const datasetId = parseInt(datasetIdFromUrl, 10);
+      if (!isNaN(datasetId) && datasetId !== currentDatasetId) {
+        setCurrentDatasetId(datasetId);
+      }
+    }
+  }, [searchParams, currentDatasetId, setCurrentDatasetId]);
+
   // 組件載入時獲取數據
   useEffect(() => {
     const initializeData = async () => {
@@ -425,7 +437,7 @@ export default function Dashboard() {
             <Button
               variant="outlined"
               startIcon={<History />}
-              onClick={() => navigate('/upload-history')}
+              onClick={() => navigate(`/upload-history?datasetId=${currentDatasetId}`)}
             >
               查看上傳歷史
             </Button>

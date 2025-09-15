@@ -36,7 +36,7 @@ import {
   Settings,
   Delete
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getUploadHistory, getBatchDetails, deleteBatch } from '../services/dashboardApi';
 import type { UploadHistory } from '../types/UploadHistory';
 import { BatchStatusConfig } from '../types/UploadHistory';
@@ -45,7 +45,8 @@ import { useDashboardStore } from '../stores/useDashboardStore';
 
 export default function UploadHistoryPage() {
   const navigate = useNavigate();
-  const { currentDatasetId, getCurrentDataset } = useDashboardStore();
+  const [searchParams] = useSearchParams();
+  const { currentDatasetId, getCurrentDataset, setCurrentDatasetId } = useDashboardStore();
   const [uploadHistory, setUploadHistory] = useState<UploadHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +62,17 @@ export default function UploadHistoryPage() {
 
   // 獲取當前選中的資料集
   const currentDataset = getCurrentDataset();
+
+  // 處理 URL 參數中的資料集 ID
+  useEffect(() => {
+    const datasetIdFromUrl = searchParams.get('datasetId');
+    if (datasetIdFromUrl) {
+      const datasetId = parseInt(datasetIdFromUrl, 10);
+      if (!isNaN(datasetId) && datasetId !== currentDatasetId) {
+        setCurrentDatasetId(datasetId);
+      }
+    }
+  }, [searchParams, currentDatasetId, setCurrentDatasetId]);
 
   // 當 currentDatasetId 改變時重新載入歷史
   useEffect(() => {
@@ -207,7 +219,7 @@ export default function UploadHistoryPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton 
               color="inherit" 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(`/dashboard?datasetId=${currentDatasetId}`)}
               sx={{ mr: 1 }}
             >
               <ArrowBack />

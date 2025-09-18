@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "../stores/useAuthStore";
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL, // 你的後端 API
@@ -8,7 +9,8 @@ const instance = axios.create({
 // 請求攔截器 - 自動添加 token
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    // 從 zustand store 中獲取 access token
+    const token = useAuthStore.getState().accessToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -76,9 +78,10 @@ instance.interceptors.response.use(
           if (refreshResponse.data.status === 0) {  // 後端成功狀態是數字 0
             const newToken = refreshResponse.data.jwt;
             
-            // 更新 token
-            localStorage.setItem('authToken', newToken);
+            // 更新 token 到 zustand store
+            useAuthStore.getState().setAccessToken(newToken);
             
+            // 更新 refresh token (仍使用 localStorage)
             if (refreshResponse.data.refreshToken) {
               localStorage.setItem('refreshToken', refreshResponse.data.refreshToken);
             }
@@ -96,7 +99,7 @@ instance.interceptors.response.use(
         
         // 刷新失敗，清理 token 並重導向登入
         console.log('❌ Token 刷新失敗，請重新登入');
-        localStorage.removeItem('authToken');
+        useAuthStore.getState().setAccessToken(null);
         localStorage.removeItem('refreshToken');
         
         processQueue(new Error('Token refresh failed'), null);
@@ -106,7 +109,7 @@ instance.interceptors.response.use(
         
       } catch (refreshError) {
         console.error('❌ Token 刷新錯誤:', refreshError);
-        localStorage.removeItem('authToken');
+        useAuthStore.getState().setAccessToken(null);
         localStorage.removeItem('refreshToken');
         
         processQueue(refreshError, null);

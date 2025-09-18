@@ -27,7 +27,8 @@ export default function AuthDebugPanel() {
   };
 
   const getTokenInfo = () => {
-    const token = localStorage.getItem('authToken');
+    // 從 zustand store 獲取 access token
+    const token = useAuthStore.getState().accessToken;
     const refreshTokenValue = localStorage.getItem('refreshToken');
     
     return {

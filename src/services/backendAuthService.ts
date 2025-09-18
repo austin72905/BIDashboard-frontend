@@ -1,4 +1,5 @@
 import axiosInstance from './axios';
+import { useAuthStore } from '../stores/useAuthStore';
 
 // 後端認證相關的類型定義
 export interface BackendUser {
@@ -58,11 +59,12 @@ export const oauthLogin = async (idToken: string): Promise<OAuthLoginResponse> =
     if (response.data.status === 0) {  // 後端成功狀態是數字 0
       console.log('✅ 後端認證成功:', response.data.user.displayName);
       
-      // 儲存 JWT token 到 localStorage
+      // 儲存 access token 到 zustand store
       if (response.data.jwt) {
-        localStorage.setItem('authToken', response.data.jwt);
+        useAuthStore.getState().setAccessToken(response.data.jwt);
       }
       
+      // 儲存 refresh token 到 localStorage
       if (response.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.refreshToken);
       }
@@ -110,7 +112,7 @@ export const backendLogout = async (): Promise<void> => {
     }
     
     // 清理本地儲存的認證資料
-    localStorage.removeItem('authToken');
+    useAuthStore.getState().setAccessToken(null);
     localStorage.removeItem('refreshToken');
     
     console.log('✅ 本地認證資料已清理');
@@ -118,7 +120,7 @@ export const backendLogout = async (): Promise<void> => {
     console.error('❌ 登出處理失敗:', error);
     
     // 確保資料被清理
-    localStorage.removeItem('authToken');
+    useAuthStore.getState().setAccessToken(null);
     localStorage.removeItem('refreshToken');
   }
 };
@@ -144,11 +146,12 @@ export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
     if (response.data.status === 0) {  // 後端成功狀態是數字 0
       console.log('✅ Token 刷新成功');
       
-      // 更新儲存的 token
+      // 更新 access token 到 zustand store
       if (response.data.jwt) {
-        localStorage.setItem('authToken', response.data.jwt);
+        useAuthStore.getState().setAccessToken(response.data.jwt);
       }
       
+      // 更新 refresh token 到 localStorage
       if (response.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.refreshToken);
       }
@@ -161,7 +164,7 @@ export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
     console.error('❌ Token 刷新失敗:', error);
     
     // 刷新失敗，清理所有 token
-    localStorage.removeItem('authToken');
+    useAuthStore.getState().setAccessToken(null);
     localStorage.removeItem('refreshToken');
     
     return null;
@@ -171,7 +174,7 @@ export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
 // 驗證 token 是否有效（簡化版，因為後端沒有 /auth/me 端點）
 export const validateToken = async (): Promise<BackendUser | null> => {
   try {
-    const token = localStorage.getItem('authToken');
+    const token = useAuthStore.getState().accessToken;
     
     if (!token) {
       console.log('📋 沒有儲存的 token');
@@ -187,7 +190,7 @@ export const validateToken = async (): Promise<BackendUser | null> => {
     console.error('❌ Token 處理失敗:', error);
     
     // 清理無效的資料
-    localStorage.removeItem('authToken');
+    useAuthStore.getState().setAccessToken(null);
     localStorage.removeItem('refreshToken');
     
     return null;
@@ -197,7 +200,7 @@ export const validateToken = async (): Promise<BackendUser | null> => {
 // 初始化認證狀態（應用啟動時調用）
 export const initializeAuth = async (): Promise<BackendUser | null> => {
   try {
-    const token = localStorage.getItem('authToken');
+    const token = useAuthStore.getState().accessToken;
     const refreshTokenValue = localStorage.getItem('refreshToken');
     
     if (!token && !refreshTokenValue) {
@@ -235,7 +238,7 @@ export const initializeAuth = async (): Promise<BackendUser | null> => {
     console.error('❌ 初始化認證狀態失敗:', error);
     
     // 發生錯誤時清理可能損壞的資料
-    localStorage.removeItem('authToken');
+    useAuthStore.getState().setAccessToken(null);
     localStorage.removeItem('refreshToken');
     
     return null;

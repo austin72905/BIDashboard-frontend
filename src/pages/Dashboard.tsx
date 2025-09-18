@@ -48,6 +48,7 @@ import { useDashboardStore } from '../stores/useDashboardStore';
 import { getAllMetrics, uploadCsv, convertAllMetricsToDashboardStats, getUserDatasets } from '../services/dashboardApi';
 import CreateDatasetDialog from '../components/CreateDatasetDialog';
 import { useAuthStore } from '../stores/useAuthStore';
+import { validateCsvFile } from '../utils/fileValidation';
 import { logout } from '../services/authService';
 import AgeDistributionChart from '../charts/AgeDistributionChart';
 import GenderPieChart from '../charts/GenderPieChart';
@@ -145,6 +146,8 @@ export default function Dashboard() {
     }
   };
 
+  // 使用專用的檔案驗證工具
+
   // 處理 CSV 檔案上傳
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -156,26 +159,29 @@ export default function Dashboard() {
       return;
     }
 
-    // 注意：批次數量限制將由後端 API 處理
-
     try {
       setUploading(true);
       setError(null);
       
-      // 檢查檔案類型
-      if (!file.name.toLowerCase().endsWith('.csv')) {
-        throw new Error('請選擇 CSV 格式的檔案');
+      // 執行完整的檔案安全驗證
+      const validation = await validateCsvFile(file);
+      if (!validation.isValid) {
+        throw new Error(validation.errorMessage);
       }
       
-      // 檢查檔案大小（例如：最大 10MB）
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        throw new Error('檔案大小不能超過 10MB');
+      // 記錄驗證警告
+      if (validation.warnings && validation.warnings.length > 0) {
+        console.warn('檔案驗證警告:', validation.warnings);
+        validation.warnings.forEach(warning => {
+          console.warn(`- ${warning}`);
+        });
       }
       
       const currentDataset = getCurrentDataset();
       console.log('🔄 開始上傳檔案:', {
         fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
         datasetId: currentDatasetId,
         datasetName: currentDataset?.name
       });
@@ -186,14 +192,25 @@ export default function Dashboard() {
       console.log('✅ 檔案上傳成功，重新載入數據...');
       await loadDashboardData();
       
-      // 顯示成功訊息（可選）
+      // 顯示成功訊息
       console.log('🎉 數據更新完成');
     } catch (err: any) {
-      const errorMessage = err.message || '檔案上傳失敗，請檢查檔案格式';
+      let errorMessage = '檔案上傳失敗，請檢查檔案格式';
+      
+      // 處理不同類型的錯誤
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.errors) {
+        errorMessage = err.response.data.errors.join(', ');
+      }
+      
       setError(errorMessage);
       console.error('上傳錯誤:', err);
     } finally {
       setUploading(false);
+      // 清空文件輸入，確保可以重新選擇相同檔案
       event.target.value = '';
     }
   };

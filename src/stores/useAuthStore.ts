@@ -9,12 +9,15 @@ interface AuthState {
   firebaseUser: FirebaseUser;
   // 後端用戶資料
   backendUser: BackendUser | null;
+  // Access Token (存在記憶體中)
+  accessToken: string | null;
   loading: boolean;
   error: string | null;
   
   // Actions
   setFirebaseUser: (user: FirebaseUser) => void;
   setBackendUser: (user: BackendUser | null) => void;
+  setAccessToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearAuth: () => void;
@@ -27,11 +30,13 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   firebaseUser: null,
   backendUser: null,
+  accessToken: null,
   loading: true,
   error: null,
   
   setFirebaseUser: (user) => set({ firebaseUser: user }),
   setBackendUser: (user) => set({ backendUser: user }),
+  setAccessToken: (token) => set({ accessToken: token }),
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
   
@@ -40,11 +45,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ 
       firebaseUser: null, 
       backendUser: null, 
+      accessToken: null,
       error: null 
     });
     
-    // 清理 localStorage
-    localStorage.removeItem('authToken');
+    // 只清理 localStorage 中的 refreshToken，accessToken 現在存在 store 中
     localStorage.removeItem('refreshToken');
   },
   
@@ -61,8 +66,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return true;
     }
     
-    // 如果沒有後端用戶但有儲存的 token，也算部分認證
-    const hasStoredToken = localStorage.getItem('authToken') || localStorage.getItem('refreshToken');
-    return hasStoredToken !== null;
+    // 如果沒有後端用戶但有 accessToken 或 refreshToken，也算部分認證
+    const hasAccessToken = state.accessToken !== null;
+    const hasRefreshToken = localStorage.getItem('refreshToken') !== null;
+    return hasAccessToken || hasRefreshToken;
   },
 }));

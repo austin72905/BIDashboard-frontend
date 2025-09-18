@@ -10,6 +10,7 @@ import {
   initializeAuth, 
   type BackendUser 
 } from './backendAuthService';
+import { useAuthStore } from '../stores/useAuthStore';
 
 type FirebaseUser = typeof auth.currentUser;
 
@@ -119,10 +120,11 @@ export const initializeAuthentication = async (): Promise<{
       return { firebaseUser, backendUser };
     }
     
-    // 如果後端認證失效，檢查是否有 localStorage 中的 token
-    const hasToken = localStorage.getItem('authToken') || localStorage.getItem('refreshToken');
+    // 如果後端認證失效，檢查是否有 zustand store 或 localStorage 中的 token
+    const hasAccessToken = useAuthStore.getState().accessToken;
+    const hasRefreshToken = localStorage.getItem('refreshToken');
     
-    if (hasToken) {
+    if (hasAccessToken || hasRefreshToken) {
       console.log('🔄 發現儲存的 token，嘗試自動恢復認證...');
       
       // 嘗試重新初始化（可能會觸發自動刷新）
@@ -153,7 +155,7 @@ export const initializeAuthentication = async (): Promise<{
     
     // 出錯時清理可能損壞的狀態
     try {
-      localStorage.removeItem('authToken');
+      useAuthStore.getState().setAccessToken(null);
       localStorage.removeItem('refreshToken');
     } catch (cleanupError) {
       console.error('❌ 清理儲存失敗:', cleanupError);

@@ -19,29 +19,36 @@ function App() {
   useEffect(() => {
     let mounted = true;
 
-    // 初始化認證狀態
-    const initAuth = async () => {
-      try {
-        setLoading(true);
+  // 初始化認證狀態
+  const initAuth = async () => {
+    try {
+      setLoading(true);
+      
+      // 初始化並檢查認證狀態
+      const authState = await initializeAuthentication();
+      
+      if (mounted) {
+        setFirebaseUser(authState.firebaseUser);
+        setBackendUser(authState.backendUser);
         
-        // 初始化並檢查認證狀態
-        const authState = await initializeAuthentication();
-        
-        if (mounted) {
-          setFirebaseUser(authState.firebaseUser);
-          setBackendUser(authState.backendUser);
-        }
-      } catch (error) {
-        console.error('❌ 應用初始化認證失敗:', error);
-        if (mounted) {
+        // 額外檢查：如果沒有任何認證狀態，確保清理
+        if (!authState.firebaseUser && !authState.backendUser) {
+          console.log('📋 沒有有效的認證狀態，確保清理');
           clearAuth();
         }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
       }
-    };
+    } catch (error) {
+      console.error('❌ 應用初始化認證失敗:', error);
+      if (mounted) {
+        clearAuth();
+      }
+    } finally {
+      if (mounted) {
+        setLoading(false);
+        console.log('✅ 認證初始化完成，loading 狀態已結束');
+      }
+    }
+  };
 
     // 監聽 Firebase 認證狀態變化
     const unsubscribe = onAuthStateChange((firebaseUser) => {

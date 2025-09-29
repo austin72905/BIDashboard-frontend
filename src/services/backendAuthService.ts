@@ -157,13 +157,33 @@ export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
       }
       
       return response.data;
+    } else if (response.data.status === 2) {
+      // refresh token 無效或過期 - 這是正常情況，不需要拋出錯誤
+      console.log('❌ Refresh token 無效或過期，需要重新登入');
+      
+      // 清理所有 token
+      useAuthStore.getState().setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      
+      return null;
     } else {
-      throw new Error('Token 刷新失敗');
+      throw new Error(response.data.message || 'Token 刷新失敗');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Token 刷新失敗:', error);
     
-    // 刷新失敗，清理所有 token
+    // 檢查是否是 HTTP 響應錯誤
+    if (error.response?.data?.status === 2) {
+      console.log('❌ 網絡請求中檢測到 Refresh token 過期');
+      
+      // 清理所有 token
+      useAuthStore.getState().setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      
+      return null;
+    }
+    
+    // 其他網絡錯誤或異常，也清理 token
     useAuthStore.getState().setAccessToken(null);
     localStorage.removeItem('refreshToken');
     
@@ -229,6 +249,9 @@ export const initializeAuth = async (): Promise<BackendUser | null> => {
         return refreshResult.user;
       } else {
         console.log('❌ 自動刷新失敗，需要重新登入');
+        // 確保狀態被清理
+        useAuthStore.getState().setAccessToken(null);
+        localStorage.removeItem('refreshToken');
         return null;
       }
     }
@@ -238,8 +261,12 @@ export const initializeAuth = async (): Promise<BackendUser | null> => {
     console.error('❌ 初始化認證狀態失敗:', error);
     
     // 發生錯誤時清理可能損壞的資料
-    useAuthStore.getState().setAccessToken(null);
-    localStorage.removeItem('refreshToken');
+    try {
+      useAuthStore.getState().setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+    } catch (cleanupError) {
+      console.error('❌ 清理儲存失敗:', cleanupError);
+    }
     
     return null;
   }

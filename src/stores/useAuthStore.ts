@@ -62,13 +62,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isFullyAuthenticated: () => {
     const state = get();
     // 檢查是否有有效的後端認證（最重要）
-    if (state.backendUser !== null) {
+    if (state.backendUser !== null && state.accessToken !== null) {
       return true;
     }
     
-    // 如果沒有後端用戶但有 accessToken 或 refreshToken，也算部分認證
-    const hasAccessToken = state.accessToken !== null;
-    const hasRefreshToken = localStorage.getItem('refreshToken') !== null;
-    return hasAccessToken || hasRefreshToken;
+    // 如果有 accessToken，算作已認證（即使沒有用戶資料）
+    if (state.accessToken !== null) {
+      return true;
+    }
+    
+    // 不再依賴 localStorage 中的 refreshToken 來判斷認證狀態
+    // 因為 refreshToken 過期時需要重新登入
+    return false;
   },
 }));

@@ -133,6 +133,11 @@ export const initializeAuthentication = async (): Promise<{
       if (retryBackendUser) {
         const firebaseUser = getCurrentUser();
         return { firebaseUser, backendUser: retryBackendUser };
+      } else {
+        console.log('❌ 自動恢復認證失敗，清理無效的認證狀態');
+        // 清理無效的認證狀態
+        useAuthStore.getState().setAccessToken(null);
+        localStorage.removeItem('refreshToken');
       }
     }
     

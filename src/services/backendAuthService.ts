@@ -1,4 +1,5 @@
 import axiosInstance from './axios';
+import axios from 'axios';
 import { useAuthStore } from '../stores/useAuthStore';
 
 // 後端認證相關的類型定義
@@ -125,7 +126,8 @@ export const backendLogout = async (): Promise<void> => {
   }
 };
 
-// 刷新 token
+// 🔥 簡化的 refreshToken 函數 - 僅用於手動調用和初始化
+// 注意：主要的 token 刷新現在由 axios 攔截器統一處理
 export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
   try {
     const storedRefreshToken = localStorage.getItem('refreshToken');
@@ -135,16 +137,20 @@ export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
       return null;
     }
     
-    console.log('🔄 刷新 token...');
+    console.log('🔄 手動刷新 token...');
     
-    const requestData: RefreshTokenRequest = {
+    // 🔥 使用原始 axios 實例避免循環攔截
+    const rawAxios = axios.create({
+      baseURL: import.meta.env.VITE_API_BASE_URL,
+      timeout: 30000,
+    });
+    
+    const response = await rawAxios.post('/auth/refresh-token', {
       refreshToken: storedRefreshToken
-    };
-    
-    const response = await axiosInstance.post<OAuthLoginResponse>('/auth/refresh-token', requestData);
+    });
     
     if (response.data.status === 0) {  // 後端成功狀態是數字 0
-      console.log('✅ Token 刷新成功');
+      console.log('✅ 手動 Token 刷新成功');
       
       // 更新 access token 到 zustand store
       if (response.data.jwt) {
@@ -170,11 +176,21 @@ export const refreshToken = async (): Promise<OAuthLoginResponse | null> => {
       throw new Error(response.data.message || 'Token 刷新失敗');
     }
   } catch (error: any) {
-    console.error('❌ Token 刷新失敗:', error);
+    console.error('❌ 手動 Token 刷新失敗:', error);
     
     // 檢查是否是 HTTP 響應錯誤
+    if (error.response?.status === 401) {
+      console.log('❌ 手動刷新中檢測到 Refresh token 請求返回 401');
+      
+      // 清理所有 token
+      useAuthStore.getState().setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      
+      return null;
+    }
+    
     if (error.response?.data?.status === 2) {
-      console.log('❌ 網絡請求中檢測到 Refresh token 過期');
+      console.log('❌ 手動刷新中檢測到 Refresh token 過期');
       
       // 清理所有 token
       useAuthStore.getState().setAccessToken(null);

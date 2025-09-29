@@ -6,6 +6,12 @@ const instance = axios.create({
   timeout: 30000,
 });
 
+// 🔥 創建原始 axios 實例，不帶攔截器，避免循環攔截
+const rawAxios = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 30000,
+});
+
 // 請求攔截器 - 自動添加 token
 instance.interceptors.request.use(
   (config) => {
@@ -40,7 +46,54 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// 回應攔截器 - 處理 token 過期
+// 🔥 統一的 token 刷新函數 - 使用原始 axios 避免循環攔截
+const refreshTokenRequest = async (): Promise<{ jwt: string; refreshToken: string } | null> => {
+  try {
+    const refreshTokenValue = localStorage.getItem('refreshToken');
+    
+    if (!refreshTokenValue) {
+      console.log('📋 沒有 refresh token');
+      return null;
+    }
+    
+    console.log('🔄 開始刷新 token...');
+    
+    // 🔥 使用原始 axios 實例，避免循環攔截
+    const response = await rawAxios.post('/auth/refresh-token', {
+      refreshToken: refreshTokenValue
+    });
+    
+    if (response.data.status === 0) {
+      console.log('✅ Token 刷新成功');
+      return {
+        jwt: response.data.jwt,
+        refreshToken: response.data.refreshToken
+      };
+    } else if (response.data.status === 2) {
+      console.log('❌ Refresh token 無效或過期，需要重新登入');
+      return null;
+    } else {
+      throw new Error(response.data.message || 'Token 刷新失敗');
+    }
+  } catch (error: any) {
+    console.error('❌ Token 刷新失敗:', error);
+    
+    // 🔥 處理 refresh token 請求返回 401 的情況
+    if (error.response?.status === 401) {
+      console.log('❌ Refresh token 請求返回 401，token 完全失效');
+      return null;
+    }
+    
+    if (error.response?.data?.status === 2) {
+      console.log('❌ 後端明確告知 Refresh token 過期');
+      return null;
+    }
+    
+    return null;
+  }
+};
+
+// 🔥 回應攔截器 - 統一處理 token 過期
 instance.interceptors.response.use(
   (response) => {
     return response;
@@ -66,50 +119,51 @@ instance.interceptors.response.use(
       isRefreshing = true;
       
       try {
-        const refreshTokenValue = localStorage.getItem('refreshToken');
+        console.log('🔄 檢測到 401 錯誤，開始自動刷新 token...');
         
-        if (refreshTokenValue) {
-          console.log('🔄 Token 過期，嘗試刷新...');
+        // 🔥 使用統一的刷新函數
+        const refreshResult = await refreshTokenRequest();
+        
+        if (refreshResult) {
+          // 更新 token 到 zustand store
+          useAuthStore.getState().setAccessToken(refreshResult.jwt);
           
-          const refreshResponse = await instance.post('/auth/refresh-token', {
-            refreshToken: refreshTokenValue
-          });
+          // 更新 refresh token 到 localStorage
+          localStorage.setItem('refreshToken', refreshResult.refreshToken);
           
-          if (refreshResponse.data.status === 0) {  // 後端成功狀態是數字 0
-            const newToken = refreshResponse.data.jwt;
-            
-            // 更新 token 到 zustand store
-            useAuthStore.getState().setAccessToken(newToken);
-            
-            // 更新 refresh token (仍使用 localStorage)
-            if (refreshResponse.data.refreshToken) {
-              localStorage.setItem('refreshToken', refreshResponse.data.refreshToken);
-            }
-            
-            console.log('✅ Token 刷新成功');
-            
-            // 處理佇列中的請求
-            processQueue(null, newToken);
-            
-            // 重試原始請求
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return instance(originalRequest);
-          }
+          console.log('✅ Token 刷新成功，重試原始請求');
+          
+          // 處理佇列中的請求
+          processQueue(null, refreshResult.jwt);
+          
+          // 重試原始請求
+          originalRequest.headers.Authorization = `Bearer ${refreshResult.jwt}`;
+          return instance(originalRequest);
+        } else {
+          // 🔥 刷新失敗，清理所有認證狀態並重導向登入
+          console.log('❌ Token 刷新失敗，清理認證狀態');
+          
+          // 清理 zustand store 中的認證狀態
+          useAuthStore.getState().setAccessToken(null);
+          useAuthStore.getState().setBackendUser(null);
+          
+          // 🔥 清理 localStorage 中的 refresh token
+          localStorage.removeItem('refreshToken');
+          
+          // 通知所有等待的請求刷新失敗
+          processQueue(new Error('Token refresh failed'), null);
+          
+          // 觸發重導向到登入頁面
+          console.log('🔄 重導向到登入頁面');
+          window.location.href = '/login';
         }
-        
-        // 刷新失敗，清理 token 並重導向登入
-        console.log('❌ Token 刷新失敗，請重新登入');
-        useAuthStore.getState().setAccessToken(null);
-        localStorage.removeItem('refreshToken');
-        
-        processQueue(new Error('Token refresh failed'), null);
-        
-        // 觸發重導向到登入頁面
-        window.location.href = '/login';
         
       } catch (refreshError) {
         console.error('❌ Token 刷新錯誤:', refreshError);
+        
+        // 🔥 清理所有認證狀態
         useAuthStore.getState().setAccessToken(null);
+        useAuthStore.getState().setBackendUser(null);
         localStorage.removeItem('refreshToken');
         
         processQueue(refreshError, null);
